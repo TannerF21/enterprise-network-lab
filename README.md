@@ -1,4 +1,5 @@
 # Enterprise Network Homelab
+**Proxmox | OPNsense | VLANs | Active Directory | DNS | DHCP | Windows Server | Kali Linux**
 
 ## Freitag Financial Services (FFS)
 
@@ -271,3 +272,58 @@ Corporate systems retained access to required Server and Internet resources whil
 #### Lesson Learned
 
 Small firewall-rule options can dramatically change policy behavior. When a firewall change causes unexpected connectivity loss, verify the exact source, destination, inversion settings, and rule order before changing unrelated network components.
+
+## Technologies Used
+
+- **Proxmox VE** — Virtualization platform and virtual networking
+- **OPNsense** — Routing, VLAN interfaces, DHCP, and firewall policy
+- **Windows Server 2022** — Active Directory Domain Services and DNS
+- **Windows 11** — Domain-joined Corporate workstation
+- **Kali Linux** — Security testing workstation
+- **Metasploitable 2** — Intentionally vulnerable security testing target
+- **Dnsmasq** — DHCP services for network clients
+- **802.1Q VLANs** — Network segmentation
+- **Linux networking tools** — `ip`, `nmcli`, `tcpdump`, `bridge`, `ping`, and `nslookup`
+- **Windows networking tools** — `ipconfig`, `ping`, `nslookup`, `nltest`, and PowerShell
+
+## Skills Demonstrated
+
+This project provided hands-on experience with:
+
+- Network architecture and subnet planning
+- VLAN configuration and 802.1Q trunking
+- Inter-VLAN routing
+- Firewall rule design and traffic segmentation
+- DHCP configuration and troubleshooting
+- DNS configuration and troubleshooting
+- Windows Server administration
+- Active Directory networking
+- Linux network configuration
+- Proxmox virtual networking
+- Network traffic analysis
+- Layer 2 and Layer 3 troubleshooting
+- Service and port conflict troubleshooting
+- Connectivity and security-policy validation
+- Technical documentation
+
+## Future Improvements
+
+The environment can be expanded in future projects without adding unnecessary complexity to the current implementation. Potential improvements include:
+
+- Dedicated IT/Admin VLAN
+- Guest network with Internet-only access
+- Centralized logging and monitoring
+- IDS/IPS deployment
+- SIEM integration
+- Additional Windows and Linux servers
+- More granular firewall policies
+- Automated configuration or validation using PowerShell, Bash, or Python
+- Azure/Entra ID integration
+
+## Project Outcome
+
+The original flat homelab was redesigned into a segmented small-enterprise environment with separate Corporate, Server, and Security networks.
+
+The final environment maintains required Active Directory, DNS, DHCP, and Internet functionality while isolating intentionally vulnerable security-testing systems from production-style resources.
+
+More importantly, the project required troubleshooting across multiple layers of the environment, including VLAN trunking, DHCP service conflicts, and firewall policy behavior. The completed lab provides a foundation for future networking, systems administration, cybersecurity, and automation projects.
