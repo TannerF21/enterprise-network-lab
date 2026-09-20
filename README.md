@@ -119,3 +119,58 @@ Kali uses the static address `10.10.40.50` and an external DNS resolver so it do
 Metasploitable uses the persistent static address `10.10.40.51`.
 
 ![Metasploitable Network Configuration](screenshots/10-metasploitable-network-config.png)
+
+## Testing and Validation
+
+After implementation, connectivity and isolation tests were performed from each primary network to verify that the firewall policy matched the intended design.
+
+### Corporate VLAN Validation
+
+CLIENT01 on VLAN 20 was tested to verify that a Corporate workstation could:
+
+- Reach its OPNsense gateway
+- Communicate with the domain controller on VLAN 100
+- Resolve public DNS names
+- Resolve the `homelab.local` Active Directory domain
+- Discover the domain controller
+- Access the Internet
+- Remain isolated from the Security VLAN
+
+Domain controller discovery was verified using `nltest`, while DNS functionality was tested using `nslookup`.
+
+![CLIENT01 Domain Connectivity](screenshots/12-client01-domain-connectivity.png)
+
+### Server VLAN Validation
+
+The Windows Server 2022 domain controller was tested to verify that Active Directory and DNS remained operational after migration to VLAN 100.
+
+The server successfully communicated with Corporate systems and the Internet while connections initiated toward the Security VLAN were blocked.
+
+![Server VLAN Validation](screenshots/13-server-vlan-validation.png)
+
+### Security VLAN Isolation
+
+Kali Linux was used to verify the Security VLAN policy.
+
+Testing confirmed that Kali could communicate with Metasploitable on the same Security VLAN and reach the Internet, while attempts to reach Corporate and Server systems were blocked by OPNsense.
+
+![Security VLAN Isolation Test](screenshots/11-security-vlan-isolation-test.png)
+
+### Validation Results
+
+| Test | Expected | Result |
+|---|---|---|
+| Corporate → Server/DC | Allowed | Pass |
+| Corporate → Security | Blocked | Pass |
+| Corporate → Internet | Allowed | Pass |
+| Corporate → AD DNS | Allowed | Pass |
+| Corporate → Domain Controller discovery | Allowed | Pass |
+| Server → Corporate | Allowed | Pass |
+| Server → Security | Blocked | Pass |
+| Server → Internet | Allowed | Pass |
+| Security → Corporate | Blocked | Pass |
+| Security → Servers | Blocked | Pass |
+| Security → Internet | Allowed | Pass |
+| Kali → Metasploitable | Allowed | Pass |
+
+The final validation confirmed that the VLAN and firewall design enforced the intended trust boundaries without disrupting required Active Directory, DNS, or Internet connectivity.
