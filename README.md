@@ -174,3 +174,100 @@ Testing confirmed that Kali could communicate with Metasploitable on the same Se
 | Kali → Metasploitable | Allowed | Pass |
 
 The final validation confirmed that the VLAN and firewall design enforced the intended trust boundaries without disrupting required Active Directory, DNS, or Internet connectivity.
+
+## Troubleshooting
+
+Several issues occurred during implementation that required troubleshooting across the virtualization, networking, and service layers.
+
+### Issue 1 — VLAN Traffic Was Not Reaching OPNsense
+
+#### Problem
+
+During initial VLAN testing, Kali was configured for VLAN 100 with an address in the `10.10.100.0/24` network but could not reach the VLAN gateway at `10.10.100.1`.
+
+Neighbor discovery showed the gateway as incomplete, indicating that basic Layer 2 communication was failing.
+
+#### Investigation
+
+I worked through the path one layer at a time rather than immediately changing firewall rules.
+
+Troubleshooting included:
+
+- Verifying Kali's IP address, subnet mask, and gateway
+- Verifying the Proxmox VM NIC was tagged for VLAN 100
+- Checking OPNsense packet captures for incoming VLAN traffic
+- Inspecting Proxmox VLAN membership with `bridge vlan show`
+- Using `tcpdump` to verify tagged VLAN 100 traffic on the bridge
+- Comparing VLAN membership between the Kali and OPNsense virtual interfaces
+
+The packet capture showed VLAN-tagged traffic reaching the Proxmox bridge, but the OPNsense virtual NIC was not configured to carry the required VLAN tags.
+
+#### Resolution
+
+The OPNsense internal virtual NIC was configured as a VLAN trunk carrying the required VLAN IDs.
+
+After correcting the trunk configuration, VLAN 100 traffic successfully reached OPNsense and Kali could communicate with the VLAN gateway.
+
+#### Lesson Learned
+
+A VLAN-aware bridge alone does not guarantee that every connected virtual interface is carrying the required VLAN traffic. Troubleshooting the complete Layer 2 path helped isolate the problem before making unnecessary routing or firewall changes.
+
+---
+
+### Issue 2 — DHCP Service Conflict
+
+#### Problem
+
+During the Corporate VLAN migration, CLIENT01 failed to receive a valid DHCP lease and assigned itself an APIPA `169.254.x.x` address.
+
+This prevented normal network communication even though the VLAN and routing configuration appeared correct.
+
+#### Investigation
+
+Instead of treating the problem as a VLAN failure, I checked the DHCP service itself.
+
+OPNsense reported that the ISC DHCP service could not bind to the DHCP address because the address was already in use.
+
+I then checked which process was listening on UDP port 67 and found that Dnsmasq was already providing DHCP services.
+
+This revealed that two DHCP services were attempting to use the same port.
+
+#### Resolution
+
+I standardized DHCP on Dnsmasq rather than running competing DHCP services.
+
+A Corporate DHCP range was configured for VLAN 20 along with the appropriate options:
+
+- Gateway: `10.10.20.1`
+- DNS server: `10.10.100.160`
+- Address range: `10.10.20.2 - 10.10.20.100`
+
+After renewing the lease, CLIENT01 received a valid `10.10.20.x` address and regained network, DNS, Active Directory, and Internet connectivity.
+
+#### Lesson Learned
+
+An APIPA address does not automatically mean the VLAN or switch configuration is broken. Verifying DHCP service status and checking which process owns the required port can quickly distinguish a service-layer problem from a network-layer problem.
+
+---
+
+### Issue 3 — Firewall Rule Inversion
+
+#### Problem
+
+While creating a rule to block Corporate systems from the Legacy network, required connectivity to the Server VLAN and Internet unexpectedly stopped while the Legacy gateway remained reachable.
+
+#### Investigation
+
+Reviewing the OPNsense rule showed that the **Destination / Invert** option had accidentally been enabled.
+
+Instead of blocking traffic to `LAN net`, the rule was effectively matching traffic destined for anything **except** `LAN net`.
+
+#### Resolution
+
+I removed the destination inversion and reapplied the firewall policy.
+
+Corporate systems retained access to required Server and Internet resources while the intended Legacy-network restriction remained in place.
+
+#### Lesson Learned
+
+Small firewall-rule options can dramatically change policy behavior. When a firewall change causes unexpected connectivity loss, verify the exact source, destination, inversion settings, and rule order before changing unrelated network components.
